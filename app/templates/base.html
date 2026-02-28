@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Campus Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      html, body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+      body { background-color: #f8fafc; color: #0f172a; }
+      .container-max { max-width: 80rem; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="number"],
+      input[type="datetime-local"],
+      textarea,
+      select {
+        background-color: #f8fafc;
+        border: 2px solid #cbd5e1;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        outline: none;
+        transition: box-shadow 0.2s, border-color 0.2s;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16,185,129,0.3);
+      }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 0.5rem; padding: 0.5rem 1rem; font-weight: 600;
+        transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+      }
+      .btn-primary { background-color: #10b981; color: #ffffff; }
+      .btn-primary:hover { background-color: #059669; }
+      .card { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+      .navbar { position: sticky; top: 0; z-index: 50; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+      .link { color: #0f172a; }
+      .link-primary { color: #10b981; }
+      .link-primary:hover { color: #059669; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-50 text-slate-900">
+    <nav class="navbar">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <div class="flex items-center gap-3">
+            <a href="{{ url_for('main.index') }}" class="text-xl font-semibold text-slate-900">Campus Pulse</a>
+            <span class="hidden sm:block text-sm text-slate-500">Nite Studio</span>
+          </div>
+          <div class="flex items-center gap-4">
+            {% if session.get('user_id') and session.get('user_role') in ['organizer', 'admin'] %}
+              <a href="{{ url_for('main.organizer_dashboard') }}" class="text-sm font-medium text-slate-700 hover:text-slate-900">Organizer Dashboard</a>
+            {% endif %}
+            {% if session.get('user_id') and session.get('user_role') == 'admin' %}
+              <a href="{{ url_for('main.admin_analytics') }}" class="text-sm font-medium text-slate-700 hover:text-slate-900">Admin Analytics</a>
+            {% endif %}
+            {% if session.get('user_id') %}
+              <span class="text-sm text-slate-600">Role: {{ session.get('user_role') }}</span>
+              <a href="{{ url_for('auth.logout') }}" class="text-sm font-medium text-slate-700 hover:text-slate-900">Logout</a>
+            {% else %}
+              <a href="{{ url_for('auth.login') }}" class="text-sm font-medium link-primary">Login</a>
+              <a href="{{ url_for('auth.register') }}" class="text-sm font-medium text-slate-700 hover:text-slate-900">Register</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="space-y-2 mb-6">
+            {% for category, message in messages %}
+              {% set styles = {
+                'success': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                'error': 'bg-red-50 text-red-800 border-red-200',
+                'warning': 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                'info': 'bg-cyan-50 text-cyan-800 border-cyan-200'
+              }[category] if category in ['success','error','warning','info'] else 'bg-slate-50 text-slate-800 border-slate-200' %}
+              <div class="border rounded px-4 py-3 {{ styles }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-16 py-6 border-t bg-white">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-sm text-slate-500">
+        © {{ 2026 }} Campus Pulse · Built by Nite Studio
+      </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>

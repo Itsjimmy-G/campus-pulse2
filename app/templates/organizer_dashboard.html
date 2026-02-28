@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-slate-900 text-slate-100 min-h-[70vh] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-semibold">Organizer Dashboard</h1>
+      <a href="{{ url_for('main.dashboard') }}" class="text-sm text-slate-300 hover:text-white">Back to Discovery</a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Total Attendees</div>
+        <div class="text-3xl font-semibold mt-2">{{ kpis.total_attendees }}</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Capacity Utilization</div>
+        <div class="text-3xl font-semibold mt-2">{{ kpis.capacity_utilization }}%</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Top Event</div>
+        <div class="text-lg font-medium mt-2">{{ kpis.top_event_title }}</div>
+        <div class="text-sm text-slate-400">Registrations: {{ kpis.top_event_count }}</div>
+      </div>
+    </div>
+    <div class="bg-slate-800 rounded-lg p-6 shadow mb-8">
+      <div class="text-slate-300 font-medium mb-4">Registrations by Event</div>
+      <div class="h-64">
+        <canvas id="orgBarChart"></canvas>
+      </div>
+    </div>
+    <div class="bg-slate-800 rounded-lg p-6 shadow">
+      <div class="text-slate-300 font-medium mb-4">My Events</div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-slate-700">
+          <thead class="bg-slate-700">
+            <tr>
+              <th class="px-4 py-2 text-left text-xs font-medium text-slate-200">Title</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-slate-200">Date</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-slate-200">Capacity</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-slate-200">Attendees</th>
+              <th class="px-4 py-2 text-left text-xs font-medium text-slate-200">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-700">
+            {% for r in rows %}
+              <tr class="hover:bg-slate-700/50">
+                <td class="px-4 py-2">{{ r.title }}</td>
+                <td class="px-4 py-2 text-sm text-slate-300">{{ r.date.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td class="px-4 py-2">{{ r.capacity }}</td>
+                <td class="px-4 py-2">{{ r.attendees }}</td>
+                <td class="px-4 py-2">
+                  {% if r.status == 'Sold Out' %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-md bg-emerald-600 text-white text-xs">Sold Out</span>
+                  {% elif r.status == 'Trending' %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-md bg-indigo-600 text-white text-xs">Trending</span>
+                  {% else %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-md bg-slate-600 text-white text-xs">Upcoming</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="px-4 py-6 text-center text-slate-400">No events yet.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script id="org-payload" type="application/json">{{ payload_json|safe }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("org-payload");
+    if (!el) return;
+    let payload = {};
+    try { payload = JSON.parse(el.textContent || "{}"); } catch (e) { payload = {}; }
+    const wrap = document.getElementById("orgBarChart");
+    if (!wrap || typeof Chart === "undefined") return;
+    const ctx = wrap.getContext("2d");
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: payload.labels || [],
+        datasets: [
+          {
+            label: "Registrations",
+            data: (payload.counts || []),
+            backgroundColor: "rgba(6,182,212,0.7)",
+            borderRadius: 6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { grid: { display: false } },
+          y: { grid: { color: "rgba(148,163,184,0.2)" }, beginAtZero: true },
+        },
+      },
+    });
+  });
+</script>
+{% endblock %}

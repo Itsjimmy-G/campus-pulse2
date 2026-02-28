@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="bg-slate-900 text-slate-100 min-h-[70vh] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-8">
+  <div class="max-w-7xl mx-auto">
+    {% set payload = data if data is defined else {} %}
+    {% set kpis = payload.kpis|default({}) %}
+    {% set trends = payload.trends|default({'labels': [], 'series': []}) %}
+    {% set categories = payload.categories|default({'labels': [], 'counts': []}) %}
+    {% set heatmap = payload.heatmap|default({'labels': [], 'capacity': [], 'attendance': []}) %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Engagement Rate</div>
+        <div class="text-3xl font-semibold mt-2">{{ kpis.engagement_rate|default(0) }}%</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Fill Rate</div>
+        <div class="text-3xl font-semibold mt-2">{{ kpis.fill_rate|default(0) }}%</div>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-sm text-slate-400">Growth (7d)</div>
+        <div class="text-3xl font-semibold mt-2">{{ kpis.growth_7d|default(0) }}%</div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-slate-800 rounded-lg p-6 shadow col-span-1 lg:col-span-2">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-slate-300 font-medium">Registration Trends (30d)</div>
+        </div>
+        <canvas id="regTrendsChart" height="120"></canvas>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow">
+        <div class="text-slate-300 font-medium mb-4">Category Popularity</div>
+        <canvas id="categoryChart" height="120"></canvas>
+      </div>
+      <div class="bg-slate-800 rounded-lg p-6 shadow col-span-1 lg:col-span-3">
+        <div class="text-slate-300 font-medium mb-4">Demand Heatmap (Top 5)</div>
+        <canvas id="heatmapChart" height="140"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+<script id="analytics-payload" type="application/json">{{ payload_json|safe }}</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script src="{{ url_for('static', filename='js/admin_charts.js') }}" defer></script>
+{% endblock %}

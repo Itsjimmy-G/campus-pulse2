@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+{% if not session.get('user_id') %}
+<div class="relative -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-16">
+  <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-cyan-900 to-emerald-700"></div>
+  <div class="absolute -top-20 -left-20 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl"></div>
+  <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl"></div>
+  <div class="relative max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+      <div>
+        <h1 class="text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400">
+          Discover. Join. Thrive.
+        </h1>
+        <p class="mt-6 text-slate-200 text-lg">
+          The modern way to find and grow campus communities. Beautiful events. Instant joining.
+        </p>
+        <div class="mt-8 flex gap-4">
+          <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Get Started</a>
+          <a href="{{ url_for('auth.login') }}" class="btn bg-white/10 text-white border border-white/20 backdrop-blur-md">Login</a>
+        </div>
+        <div class="mt-10">
+          <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-6 text-white max-w-md">
+            <div class="text-sm text-slate-200 mb-2">Preview</div>
+            <div class="bg-white/10 rounded-lg p-4">
+              <div class="h-32 bg-gradient-to-r from-emerald-400/40 to-indigo-500/40 rounded-md"></div>
+              <div class="mt-4">
+                <div class="h-4 w-2/3 bg-white/20 rounded mb-2"></div>
+                <div class="h-4 w-1/2 bg-white/20 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-8">
+          <form method="post" action="{{ url_for('auth.login') }}" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="relative">
+              <input name="email" type="email" required class="peer w-full bg-white/20 border border-white/40 text-white placeholder-transparent rounded-lg p-3 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400" placeholder="Email">
+              <label class="absolute left-3 -top-2.5 bg-transparent px-1 text-xs text-white/90 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-xs">Email</label>
+            </div>
+            <div class="relative">
+              <input name="password" type="password" required class="peer w-full bg-white/20 border border-white/40 text-white placeholder-transparent rounded-lg p-3 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400" placeholder="Password">
+              <label class="absolute left-3 -top-2.5 bg-transparent px-1 text-xs text-white/90 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-base peer-focus:-top-2.5 peer-focus:text-xs">Password</label>
+            </div>
+            <div class="flex items-center justify-between">
+              <button type="submit" class="btn btn-primary">Login</button>
+              <a href="{{ url_for('auth.register') }}" class="text-sm text-white/80 hover:text-white">Create an account</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-semibold">Discovery</h1>
+  {% if session.get('user_id') and session.get('user_role') in ['organizer','admin'] %}
+    <a href="{{ url_for('main.create_event') }}" class="inline-flex items-center px-3 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700">Create Event</a>
+  {% endif %}
+  </div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {% for event in events %}
+    <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      {% if event.image_file and event.image_file != 'default.jpg' %}
+        <img src="{{ url_for('static', filename='event_pics/' ~ event.image_file) }}" alt="{{ event.title }} banner" class="w-full h-40 object-cover">
+      {% endif %}
+      <div class="p-4">
+        <h2 class="text-lg font-semibold">{{ event.title }}</h2>
+        <div class="mt-2 text-sm text-gray-600">
+          <div>Date: {{ event.start_time.strftime('%Y-%m-%d %H:%M') }}</div>
+          <div>Location: {{ event.location }}</div>
+        </div>
+        <div class="mt-4">
+          <a href="{{ url_for('main.event_detail', event_id=event.id) }}" class="inline-flex items-center px-3 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200">View Details</a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="col-span-full">
+      <div class="bg-white border rounded-lg p-6 text-center text-gray-600">
+        No events yet.
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

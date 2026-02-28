@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white shadow-sm border rounded-lg p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">Create Event</h1>
+    <a href="{{ url_for('main.dashboard') }}" class="text-sm text-gray-600 hover:text-gray-900">Back to Dashboard</a>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Title</label>
+      <input name="title" type="text" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Description</label>
+      <textarea name="description" rows="4" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"></textarea>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Date/Time</label>
+        <input name="start_time" type="datetime-local" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Location</label>
+        <input name="location" type="text" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      </div>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Capacity</label>
+      <input name="capacity" type="number" min="1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700">Banner Image</label>
+      <input name="image_file" type="file" accept="image/*" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+      <p class="text-xs text-gray-500 mt-1">Recommended: JPG/PNG. We resize automatically.</p>
+    </div>
+    <div class="flex items-center justify-end">
+      <button type="submit" class="inline-flex items-center px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">Create Event</button>
+    </div>
+  </form>
+{% endblock %}
