@@ -1,4 +1,4 @@
-# 🏥 Campus Pulse | Nite Studio
+# 🏥 Campus Pulse
 **Agile Event Management System**
 
 ## 🚀 Easy Setup for Colleagues
