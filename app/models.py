@@ -1,74 +1,23 @@
 from __future__ import annotations
 import enum
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Optional, List
 
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, String, DateTime, Integer, Text, Enum, select, func
+from werkzeug.security import generate_password_hash, check_password_hash
 
-db = SQLAlchemy()
+# Senior Tip: Explicitly define a Base for better type checking
+class Base(DeclarativeBase):
+    pass
 
+db = SQLAlchemy(model_class=Base)
 
 class UserRole(enum.StrEnum):
     STUDENT = "student"
     ORGANIZER = "organizer"
     ADMIN = "admin"
-
-registrations = db.Table(
-    "registrations",
-    db.Column("user_id", db.Integer, db.ForeignKey("users.id"), nullable=False),
-    db.Column("event_id", db.Integer, db.ForeignKey("events.id"), nullable=False),
-    db.Column("registered_at", db.DateTime, default=datetime.utcnow, nullable=False),
-    db.UniqueConstraint("user_id", "event_id", name="uq_registration"),
-)
-
-
-class User(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
-    full_name = db.Column(db.String(255), nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum(UserRole), default=UserRole.STUDENT, nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    organized_events = db.relationship("Event", backref="organizer", lazy="select", foreign_keys="Event.organizer_id")
-    registered_events = db.relationship(
-        "Event",
-        secondary=registrations,
-        lazy="select",
-        back_populates="attendees",
-    )
-
-    def set_password(self, password: str) -> None:
-        try:
-            import bcrypt
-
-            salt = bcrypt.gensalt(rounds=12)
-            self.password_hash = bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
-        except Exception:
-            from werkzeug.security import generate_password_hash
-
-            self.password_hash = generate_password_hash(password, method="pbkdf2:sha256", salt_length=16)
-
-    def check_password(self, password: str) -> bool:
-        try:
-            import bcrypt
-
-            return bcrypt.checkpw(password.encode("utf-8"), self.password_hash.encode("utf-8"))
-        except Exception:
-            from werkzeug.security import check_password_hash
-
-            return check_password_hash(self.password_hash, password)
-
-    @property
-    def is_admin(self) -> bool:
-        return self.role == UserRole.ADMIN
-
-    @property
-    def is_organizer(self) -> bool:
-        return self.role in (UserRole.ORGANIZER, UserRole.ADMIN)
-
 
 class EventCategory(enum.StrEnum):
     GENERAL = "general"
@@ -77,39 +26,83 @@ class EventCategory(enum.StrEnum):
     ARTS = "arts"
     ACADEMIC = "academic"
 
+# Many-to-Many Association Table
+registrations = db.Table(
+    "registrations",
+    db.Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("event_id", Integer, ForeignKey("events.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("registered_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+)
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.STUDENT, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    organized_events: Mapped[List["Event"]] = relationship("Event", back_populates="organizer", foreign_keys="[Event.organizer_id]")
+    registered_events: Mapped[List["Event"]] = relationship("Event", secondary=registrations, back_populates="attendees")
+
+    def set_password(self, password: str) -> None:
+        """Seniors use a single, reliable hashing method for consistency."""
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == UserRole.ADMIN
+
+    @property
+    def is_privileged(self) -> bool:
+        """Abbreviated logic for permission checking."""
+        return self.role in {UserRole.ORGANIZER, UserRole.ADMIN}
+
 
 class Event(db.Model):
     __tablename__ = "events"
 
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    category = db.Column(db.Enum(EventCategory), default=EventCategory.GENERAL, nullable=False, index=True)
-    location = db.Column(db.String(255), nullable=False)
-    start_time = db.Column(db.DateTime, nullable=False)
-    end_time = db.Column(db.DateTime, nullable=False)
-    capacity = db.Column(db.Integer, nullable=False)
-    banner_path = db.Column(db.String(512), nullable=True)
-    image_file = db.Column(db.String(255), nullable=False, default="default.jpg")
-    organizer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[EventCategory] = mapped_column(Enum(EventCategory), default=EventCategory.GENERAL, index=True)
+    location: Mapped[str] = mapped_column(String(255), nullable=False)
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    capacity: Mapped[int] = mapped_column(Integer, nullable=False)
+    image_file: Mapped[str] = mapped_column(String(255), default="default.jpg")
+    organizer_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    attendees = db.relationship(
-        "User",
-        secondary=registrations,
-        lazy="select",
-        back_populates="registered_events",
-    )
+    organizer: Mapped["User"] = relationship("User", back_populates="organized_events", foreign_keys=[organizer_id])
+    attendees: Mapped[List["User"]] = relationship("User", secondary=registrations, back_populates="registered_events")
 
-    def seats_taken(self) -> int:
-        return len(self.attendees)
+    def get_attendee_count(self) -> int:
+        """
+        Senior Performance Fix: 
+        Don't use len(self.attendees). It loads every user object into RAM.
+        Query the count directly from the database instead.
+        """
+        return db.session.query(func.count(registrations.c.user_id)).filter(registrations.c.event_id == self.id).scalar()
 
     def has_capacity(self) -> bool:
-        return self.seats_taken() < self.capacity
+        return self.get_attendee_count() < self.capacity
 
     def can_register(self, user: User) -> bool:
-        return self.has_capacity() and user not in self.attendees
+        if not self.has_capacity():
+            return False
+        # Check existence without loading the whole list
+        exists = db.session.query(registrations).filter_by(user_id=user.id, event_id=self.id).first()
+        return exists is None
 
-
-def get_user_by_email(email: str) -> Optional[User]:
-    return db.session.execute(db.select(User).filter_by(email=email)).scalar_one_or_none()
+# Repository Pattern Helper
+class UserRepository:
+    @staticmethod
+    def get_by_email(email: str) -> Optional[User]:
+        return db.session.execute(select(User).filter_by(email=email)).scalar_one_or_none()
